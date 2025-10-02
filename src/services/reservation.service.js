@@ -1,100 +1,307 @@
 /**
- * @file Lógica de reservas: disponibilidad, precio, cuotas, tipo de cambio.
+ * @file Lógica de reservas: disponibilidad, horario permitido, precio, cuotas y tipo de cambio.
+ * - NO permite solapes por espacio/fecha/rango horario (independiente del usuario).
+ * - Valida horario permitido (p. ej. 08:00–22:00).
+ * - Usa transacciones y row-level locks para evitar condiciones de carrera.
+ * - En caso de error, se hace rollback automático.
  */
 
-import { Reservation, Space } from "../models/index.js";
+import { Op } from "sequelize";
+import { sequelize, Reservation, Space } from "../models/index.js";
 import { calculateTotalVES } from "../utils/calculatePrice.js";
 import { buildQuotas } from "../utils/calculateQuotas.js";
 import { isWithinAllowedHours } from "../utils/dateUtils.js";
 import { getUsdToVesRate } from "../utils/exchangeRate.js";
-import { Op } from "sequelize";
 
 /**
- * Verifica traslape de reservas existentes (mismo espacio/fecha).
- * @param {number} spaceId
- * @param {string} dateISO
- * @param {string} startTime - "HH:mm"
- * @param {number} duration
- * @returns {Promise<boolean>} true si hay choque
+ * Convierte "HH:mm" a minutos desde medianoche.
+ * @param {string} hhmm - formato "HH:mm"
+ * @returns {number} minutos
  */
-async function hasOverlap(spaceId, dateISO, startTime, duration) {
-  const [startH, startM] = startTime.split(":").map(Number);
-  const start = startH * 60 + startM;
-  const end = start + duration * 60;
+function toMinutes(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
 
-  // Trae todas las reservas del mismo día/espacio (suficiente para el reto)
+/**
+ * Determina si dos intervalos [startA, endA) y [startB, endB) de minutos se solapan.
+ * @param {number} aStart
+ * @param {number} aEnd
+ * @param {number} bStart
+ * @param {number} bEnd
+ * @returns {boolean}
+ */
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+/**
+ * Revisa solapes contra TODAS las reservas de ese día/espacio.
+ * Se hace dentro de una transacción + lock para evitar condiciones de carrera.
+ * @param {import('sequelize').Transaction} t
+ * @param {number} spaceId
+ * @param {string} dateISO - YYYY-MM-DD
+ * @param {string} startTime - "HH:mm"
+ * @param {number} durationHours
+ * @param {number} [excludeId] - id de reserva a excluir (para update)
+ * @returns {Promise<boolean>} true si hay solape
+ */
+async function hasOverlapLocked(
+  t,
+  spaceId,
+  dateISO,
+  startTime,
+  durationHours,
+  excludeId
+) {
+  const start = toMinutes(startTime);
+  const end = start + durationHours * 60;
+
+  const where = { space_id: spaceId, date: dateISO };
+  if (excludeId) {
+    where.id = { [Op.ne]: excludeId };
+  }
+
+  // Traemos y BLOQUEAMOS las filas del día/espacio.
   const sameDay = await Reservation.findAll({
-    where: { space_id: spaceId, date: dateISO },
+    where,
+    transaction: t,
+    lock: t.LOCK.UPDATE, // row-level lock (Postgres)
   });
+
   return sameDay.some((r) => {
-    const [h, m] = r.start_time.split(":").map(Number);
-    const s = h * 60 + m;
+    const s = toMinutes(r.start_time);
     const e = s + r.duration * 60;
-    return start < e && end > s; // solape clásico
+    return rangesOverlap(start, end, s, e);
   });
 }
 
 /**
- * Crea una reserva y devuelve montos (VES/USD) y cuotas (opcional).
- * @param {{userId:number,spaceId:number,date:string,startTime:string,duration:number,cuotas?:number}} payload
- * @returns {Promise<{reservationId:number,montoVES:number,montoUSD:number,cuotas?:{fecha:string,montoVES:number}[]}>}
- * @throws Error con message semántico si no hay disponibilidad u horario inválido
+ * Busca reserva por id (simple).
+ * @param {number} id
+ * @returns {Promise<Reservation|null>}
+ */
+export function findByPk(id) {
+  return Reservation.findByPk(id);
+}
+
+/**
+ * Crea una reserva y retorna montos y cuotas.
+ * transacción (con rollback ante error).
+ *
+ * @param {{
+ *   userId:number,
+ *   spaceId:number,
+ *   date:string,         // YYYY-MM-DD
+ *   startTime:string,    // "HH:mm"
+ *   duration:number,     // horas
+ *   cuotas?:number
+ * }} payload
+ * @returns {Promise<{
+ *   reservationId:number,
+ *   montoVES:number,
+ *   montoUSD:number,
+ *   cuotas?:{fecha:string,montoVES:number}[],
+ *   calculation:{
+ *     basePerHour:number,
+ *     durationHours:number,
+ *     weekendFactor:boolean,
+ *     date:string,
+ *     fxUsed:number
+ *   }
+ * }>}
+ * @throws Error con message semántico: space_not_found | invalid_hours | overlapped_reservation
  */
 export async function createReservation(payload) {
   const { userId, spaceId, date, startTime, duration, cuotas = 1 } = payload;
 
-  // 1) espacio
-  const space = await Space.findByPk(spaceId);
-  if (!space) {
-    const e = new Error("space_not_found");
-    e.status = 404;
-    throw e;
-  }
+  return await sequelize.transaction(async (t) => {
+    // 1) espacio
+    const space = await Space.findByPk(spaceId, { transaction: t });
+    if (!space) {
+      const e = new Error("space_not_found");
+      e.status = 404;
+      throw e;
+    }
 
-  // 2) horario permitido
-  if (!isWithinAllowedHours(startTime, duration)) {
-    const e = new Error("invalid_hours");
-    e.status = 400;
-    throw e;
-  }
+    // 2) horario permitido
+    if (!isWithinAllowedHours(startTime, duration)) {
+      const e = new Error("invalid_hours");
+      e.status = 400;
+      throw e;
+    }
 
-  // 3) disponibilidad
-  const overlap = await hasOverlap(spaceId, date, startTime, duration);
-  if (overlap) {
-    const e = new Error("overlapped_reservation");
-    e.status = 409;
-    throw e;
-  }
+    // 3) disponibilidad (solapes)
+    const overlap = await hasOverlapLocked(
+      t,
+      spaceId,
+      date,
+      startTime,
+      duration
+    );
+    if (overlap) {
+      const e = new Error("overlapped_reservation");
+      e.status = 409;
+      throw e;
+    }
 
-  // 4) precio
-  const base = Number(space.price_per_hour);
-  const totalVES = calculateTotalVES(base, duration, date);
+    // 4) precio total VES
+    const base = Number(space.price_per_hour);
+    const totalVES = calculateTotalVES(base, duration, date); // aplica factor fin de semana
 
-  // 5) tipo de cambio
-  const rate = await getUsdToVesRate();
-  const totalUSD = parseFloat((totalVES / rate).toFixed(2));
+    // factor usado (útil para devolverlo): true si finde, false si no
+    const weekendFactor =
+      totalVES === +(base * duration * 1.2).toFixed(2) ? true : false;
 
-  // 6) persistencia
-  const reservation = await Reservation.create({
-    user_id: userId,
-    space_id: spaceId,
-    date,
-    start_time: startTime,
-    duration,
+    // 5) tipo de cambio y USD
+    const fx = await getUsdToVesRate(); // modo fake con cache 1h
+    const totalUSD = parseFloat((totalVES / fx).toFixed(2));
+
+    // 6) persistencia
+    const reservation = await Reservation.create(
+      {
+        user_id: userId,
+        space_id: spaceId,
+        date,
+        start_time: startTime,
+        duration,
+      },
+      { transaction: t }
+    );
+
+    // 7) cuotas (opcional)
+    const result = {
+      reservationId: reservation.id,
+      montoVES: totalVES,
+      montoUSD: totalUSD,
+      calculation: {
+        basePerHour: base,
+        durationHours: duration,
+        weekendFactor,
+        date,
+        fxUsed: fx,
+      },
+    };
+    if (cuotas && cuotas > 1)
+      result.cuotas = buildQuotas(totalVES, cuotas, date);
+
+    return result;
   });
-
-  // 7) cuotas
-  const result = {
-    reservationId: reservation.id,
-    montoVES: totalVES,
-    montoUSD: totalUSD,
-  };
-  if (cuotas && cuotas > 1) result.cuotas = buildQuotas(totalVES, cuotas, date);
-
-  return result;
 }
 
-/** Lista reservas del usuario autenticado (simple) */
+/**
+ * Actualiza una reserva y retorna montos y cuotas.
+ * transacción (con rollback ante error).
+ *
+ * @param {number} id
+ * @param {{
+ *   userId:number,
+ *   spaceId:number,
+ *   date:string,
+ *   startTime:string,
+ *   duration:number,
+ *   cuotas?:number
+ * }} payload
+ * @returns {Promise<{
+ * reservationId:number,
+ * montoVES:number,
+ * montoUSD:number,
+ * cuotas?:{fecha:string,montoVES:number}[],
+ * calculation:{
+ *     basePerHour:number,
+ *     durationHours:number,
+ *     weekendFactor:boolean,
+ *     date:string,
+ *     fxUsed:number
+ *   }}>}
+ * @throws Error: reservation_not_found | space_not_found | invalid_hours | overlapped_reservation
+ */
+export async function updateReservation(id, payload) {
+  const { userId, spaceId, date, startTime, duration, cuotas = 1 } = payload;
+
+  return await sequelize.transaction(async (t) => {
+    const current = await Reservation.findOne({
+      where: { id, user_id: userId },
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    });
+    if (!current) {
+      const e = new Error("reservation_not_found");
+      e.status = 404;
+      throw e;
+    }
+
+    const space = await Space.findByPk(spaceId, { transaction: t });
+    if (!space) {
+      const e = new Error("space_not_found");
+      e.status = 404;
+      throw e;
+    }
+
+    if (!isWithinAllowedHours(startTime, duration)) {
+      const e = new Error("invalid_hours");
+      e.status = 400;
+      throw e;
+    }
+
+    // excluimos la propia reserva al verificar solape
+    const overlap = await hasOverlapLocked(
+      t,
+      spaceId,
+      date,
+      startTime,
+      duration,
+      id
+    );
+    if (overlap) {
+      const e = new Error("overlapped_reservation");
+      e.status = 409;
+      throw e;
+    }
+
+    const base = Number(space.price_per_hour);
+    const totalVES = calculateTotalVES(base, duration, date);
+    const weekendFactor =
+      totalVES === +(base * duration * 1.2).toFixed(2) ? true : false;
+
+    const fx = await getUsdToVesRate();
+    const totalUSD = parseFloat((totalVES / fx).toFixed(2));
+
+    const reservation = await current.update(
+      {
+        user_id: userId,
+        space_id: spaceId,
+        date,
+        start_time: startTime,
+        duration,
+      },
+      { transaction: t }
+    );
+
+    const result = {
+      reservationId: reservation.id,
+      montoVES: totalVES,
+      montoUSD: totalUSD,
+      calculation: {
+        basePerHour: base,
+        durationHours: duration,
+        weekendFactor,
+        date,
+        fxUsed: fx,
+      },
+    };
+    if (cuotas && cuotas > 1)
+      result.cuotas = buildQuotas(totalVES, cuotas, date);
+
+    return result;
+  });
+}
+
+/**
+ * Lista reservas del usuario autenticado.
+ * @param {number} userId
+ * @returns {Promise<Reservation[]>}
+ */
 export function listMyReservations(userId) {
   return Reservation.findAll({
     where: { user_id: userId },
@@ -102,15 +309,43 @@ export function listMyReservations(userId) {
       ["date", "DESC"],
       ["start_time", "DESC"],
     ],
+    include: [{ model: Space, as: "space" }],
   });
 }
 
-/** Detalle de una reserva si pertenece al usuario */
-export function getReservationByIdForUser(id, userId) {
-  return Reservation.findOne({ where: { id, user_id: userId } });
+/**
+ * Lista todas las reservas (admin/simple).
+ * @returns {Promise<Reservation[]>}
+ */
+export function listReservations() {
+  return Reservation.findAll({
+    order: [
+      ["date", "DESC"],
+      ["start_time", "DESC"],
+    ],
+    include: [{ model: Space, as: "space" }],
+  });
 }
 
-/** Cancela/elimina reserva si pertenece al usuario */
+/**
+ * Detalle de una reserva si pertenece al usuario.
+ * @param {number} id
+ * @param {number} userId
+ * @returns {Promise<Reservation|null>}
+ */
+export function getReservationByIdForUser(id, userId) {
+  return Reservation.findOne({
+    where: { id, user_id: userId },
+    include: [{ model: Space, as: "space" }],
+  });
+}
+
+/**
+ * Cancela/elimina reserva si pertenece al usuario.
+ * @param {number} id
+ * @param {number} userId
+ * @returns {Promise<Reservation|null>}
+ */
 export async function cancelReservationForUser(id, userId) {
   const r = await Reservation.findOne({ where: { id, user_id: userId } });
   if (!r) return null;

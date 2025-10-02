@@ -9,8 +9,10 @@ import { validate } from "../middlewares/validate.middleware.js";
 import {
   create,
   list,
+  listMe,
   get,
   remove,
+  update,
 } from "../controllers/reservation.controller.js";
 
 const router = Router();
@@ -46,7 +48,27 @@ router.post(
  * tags: [Reservations]
  */
 router.get("/", list);
+router.get("/me", listMe);
 router.get("/:id", get);
+
+/**
+ * @swagger
+ * /api/reservations/:id:
+ *  put:
+ *  summary: Actualiza una reserva
+ *  security: [{ bearerAuth: [] }]
+ *  tags: [Reservations]
+ */
+router.put(
+  "/:id",
+  body("spaceId").isNumeric(),
+  body("date").isISO8601(),
+  body("startTime").matches(/^\d{2}:\d{2}$/),
+  body("duration").isInt({ gt: 0 }),
+  body("cuotas").optional().isInt({ min: 1 }),
+  validate,
+  update
+);
 
 /**
  * @swagger

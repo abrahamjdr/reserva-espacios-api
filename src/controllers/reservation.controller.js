@@ -4,7 +4,10 @@
 
 import {
   createReservation,
+  updateReservation,
+  listReservations,
   listMyReservations,
+  findByPk,
   getReservationByIdForUser,
   cancelReservationForUser,
 } from "../services/reservation.service.js";
@@ -31,8 +34,44 @@ export async function create(req, res, next) {
   }
 }
 
+/**
+ * PUT /reservations
+ * @param {import('express').Request} req - body: {spaceId,date,startTime,duration,cuotas?}
+ */
+export async function update(req, res, next) {
+  try {
+    const { id } = req.params;
+    const reservationExists = await findByPk(Number(id));
+    if (!reservationExists)
+      return res.status(404).json({ error: "reservation_not_found" });
+
+    const { spaceId, date, startTime, duration, cuotas } = req.body;
+    const result = await updateReservation(reservationExists.id, {
+      userId: req.user.id,
+      spaceId,
+      date,
+      startTime,
+      duration,
+      cuotas,
+    });
+    res.status(201).json(toCamelCase(result));
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** GET /reservations */
 export async function list(req, res, next) {
+  try {
+    const list = await listReservations(req.user.id);
+    res.json({ reservations: list.map((r) => toCamelCase(r.toJSON())) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /reservations/me */
+export async function listMe(req, res, next) {
   try {
     const list = await listMyReservations(req.user.id);
     res.json({ reservations: list.map((r) => toCamelCase(r.toJSON())) });
