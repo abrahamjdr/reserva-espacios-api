@@ -5,18 +5,22 @@
 import { validationResult } from "express-validator";
 
 /**
- * Revisa errores de validación y, si existen, responde 400 con detalles.
- * @function validate
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- * @returns {void}
+ * Revisa errores de validación y, si existen, eleva un pseudo-error normalizado.
+ * @type {import('express').RequestHandler}
  */
-export function validate(req, res, next) {
+export function validate(req, _res, next) {
   const errors = validationResult(req);
-  if (!errors.isEmpty())
-    return res
-      .status(400)
-      .json({ error: "validation_error", details: errors.array() });
+  if (!errors.isEmpty()) {
+    const err = {
+      type: "validation_error",
+      details: errors.array().map((e) => ({
+        field: e.path,
+        msg: e.msg,
+        location: e.location,
+        value: e.value,
+      })),
+    };
+    return next(err);
+  }
   next();
 }
