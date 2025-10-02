@@ -35,3 +35,12 @@ Reservation.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 Space.hasMany(Reservation, { foreignKey: "space_id", as: "reservations" });
 Reservation.belongsTo(Space, { foreignKey: "space_id", as: "space" });
+
+/**
+ * Sincroniza modelos con la base de datos.
+ * En dev usamos alter:true para ajustar cambios menores.
+ * @returns {Promise<void>}
+ */
+export async function syncDb() {
+  await sequelize.sync({ alter: true });
+}

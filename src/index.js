@@ -3,12 +3,10 @@
  *       levanta el servidor HTTP y sincroniza la base de datos.
  */
 
-import dotenv from "dotenv";
-dotenv.config();
-
+import "dotenv/config";
 import { createServer } from "http";
 import app from "./app.js";
-import { sequelize } from "./models/index.js";
+import { syncDb } from "./models/index.js";
 
 /**
  * Arranca el servidor HTTP y sincroniza la base de datos.
@@ -20,7 +18,7 @@ async function main() {
   try {
     // await sequelize.authenticate(); // con este comando verificamos la conexión
 
-    await sequelize.sync(); // para investigar, usar migraciones
+    await syncDb(); // para investigar, usar migraciones
     // eslint-disable-next-line no-console
     console.log("🗄️  DB conectada y sincronizada");
   } catch (err) {
