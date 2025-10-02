@@ -1,0 +1,6 @@
+{
+  "messages": {
+    "invalidToken": "Token inválido o expirado",
+    "internalError": "Error interno del servidor"
+  }
+}
