@@ -1,52 +1,115 @@
 /**
- * @file Rutas de usuarios + Swagger JSDoc.
+ * @file Router de usuarios:
+ *       Endpoints protegidos por JWT para listar, obtener, crear, actualizar y eliminar usuarios.
  */
 
 import { Router } from "express";
+import auth from "../middlewares/auth.middleware.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { body, param } from "express-validator";
 import {
-  profile,
   getUsers,
-  create,
   getById,
+  profile,
+  create,
   update,
   remove,
 } from "../controllers/user.controller.js";
-import { validate } from "../middlewares/validate.middleware.js";
-import { body } from "express-validator";
-import auth from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
+// Todas las rutas requieren autenticación
 router.use(auth);
 
 /**
+ * @route GET /api/users
+ * @summary Lista todos los usuarios
+ * @access Privado (JWT)
+ *
  * @swagger
  * /api/users:
- * /api/users/:id
  *   get:
- *     summary: listado de los usuarios (registrados)
+ *     summary: Lista todos los usuarios
  *     security: [{ bearerAuth: [] }]
  *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: OK
  */
-router.get("/", auth, getUsers);
+router.get("/", getUsers);
 
-router.get("/:id", getById);
 /**
+ * @route GET /api/users/{id}
+ * @summary Obtiene un usuario por id
+ * @access Privado (JWT)
+ *
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Obtiene un usuario por id
+ *     security: [{ bearerAuth: [] }]
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: OK
+ *       404:
+ *         description: No encontrado
+ */
+router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
+
+/**
+ * @route GET /api/users/profile
+ * @summary Perfil del usuario autenticado
+ * @access Privado (JWT)
+ *
  * @swagger
  * /api/users/profile:
  *   get:
  *     summary: Perfil del usuario autenticado
  *     security: [{ bearerAuth: [] }]
  *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: OK
+ *       404:
+ *         description: No encontrado
  */
-router.get("/profile", auth, profile);
+router.get("/profile", profile);
 
 /**
+ * @route POST /api/users
+ * @summary Crea un usuario (ruta administrativa)
+ * @access Privado (JWT)
+ *
  * @swagger
  * /api/users:
  *   post:
- *     summary: Registro de usuario
+ *     summary: Crea un usuario
+ *     security: [{ bearerAuth: [] }]
  *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name:     { type: string }
+ *               email:    { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       201:
+ *         description: Creado
+ *       400:
+ *         description: Validación inválida
+ *       409:
+ *         description: Email ya registrado
  */
 router.post(
   "/",
@@ -58,28 +121,69 @@ router.post(
 );
 
 /**
+ * @route PUT /api/users/{id}
+ * @summary Actualiza un usuario
+ * @access Privado (JWT)
+ *
  * @swagger
- * /api/users/:id:
+ * /api/users/{id}:
  *   put:
- *     summary: Registro de usuario
+ *     summary: Actualiza un usuario
+ *     security: [{ bearerAuth: [] }]
  *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:  { type: string }
+ *               email: { type: string }
+ *     responses:
+ *       200:
+ *         description: Actualizado
+ *       400:
+ *         description: Validación inválida
+ *       404:
+ *         description: No encontrado
  */
 router.put(
   "/:id",
-  body("name").isString().notEmpty(),
-  body("email").isEmail(),
+  param("id").isInt({ gt: 0 }),
+  body("name").optional().isString().notEmpty(),
+  body("email").optional().isEmail(),
   validate,
   update
 );
 
 /**
+ * @route DELETE /api/users/{id}
+ * @summary Elimina un usuario
+ * @access Privado (JWT)
+ *
  * @swagger
- * /api/users/:id:
- *  delete:
- *  summary: Elimina un espacio
- *  security: [{ bearerAuth: [] }]
- *  tags: [User]
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Elimina un usuario
+ *     security: [{ bearerAuth: [] }]
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Eliminado
+ *       404:
+ *         description: No encontrado
  */
-router.delete("/:id", remove);
+router.delete("/:id", param("id").isInt({ gt: 0 }), validate, remove);
 
 export default router;
