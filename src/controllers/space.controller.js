@@ -20,7 +20,8 @@ export async function create(req, res, next) {
       description,
       price_per_hour: pricePerHour,
     });
-    res.status(201).json({ space: toCamelCase(space.toJSON()) });
+    const plainSpace = space.get({ plain: true });
+    res.status(201).json({ space: toCamelCase(plainSpace) });
   } catch (err) {
     next(err);
   }
@@ -57,7 +58,8 @@ export async function update(req, res, next) {
       price_per_hour: pricePerHour,
     });
     if (!updated) return res.status(404).json({ error: "space_not_found" });
-    res.json({ space: toCamelCase(updated.toJSON()) });
+    const plainUpdated = updated.get({ plain: true });
+    res.json({ space: toCamelCase(plainUpdated) });
   } catch (err) {
     next(err);
   }

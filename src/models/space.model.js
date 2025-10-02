@@ -22,6 +22,7 @@ export default function defineSpace(sequelize, DataTypes) {
     {
       tableName: "spaces",
       underscored: true,
+      timestamps: true,
     }
   );
 
