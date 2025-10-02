@@ -11,13 +11,8 @@ import { register, login } from "../controllers/auth.controller.js";
 const router = Router();
 
 /**
- * @route POST /api/auth/register
- * @summary Registro de usuario
- * @description Crea un nuevo usuario con nombre, email y contraseña.
- * @access Público
- *
- * @swagger
- * /api/auth/register:
+ * @openapi
+ * /auth/register:
  *   post:
  *     summary: Registro de usuario
  *     tags: [Auth]
@@ -30,15 +25,12 @@ const router = Router();
  *             required: [name, email, password]
  *             properties:
  *               name:     { type: string }
- *               email:    { type: string }
- *               password: { type: string }
+ *               email:    { type: string, format: email }
+ *               password: { type: string, minLength: 6 }
  *     responses:
- *       201:
- *         description: Usuario registrado correctamente
- *       400:
- *         description: Error de validación
- *       409:
- *         description: Email ya registrado
+ *       201: { description: Usuario registrado correctamente }
+ *       400: { description: Error de validación }
+ *       409: { description: Email ya registrado }
  */
 router.post(
   "/register",
@@ -50,13 +42,8 @@ router.post(
 );
 
 /**
- * @route POST /api/auth/login
- * @summary Login de usuario
- * @description Autentica por email y contraseña y devuelve un JWT.
- * @access Público
- *
- * @swagger
- * /api/auth/login:
+ * @openapi
+ * /auth/login:
  *   post:
  *     summary: Login de usuario
  *     tags: [Auth]
@@ -68,15 +55,12 @@ router.post(
  *             type: object
  *             required: [email, password]
  *             properties:
- *               email:    { type: string }
+ *               email:    { type: string, format: email }
  *               password: { type: string }
  *     responses:
- *       200:
- *         description: Login exitoso
- *       400:
- *         description: Error de validación
- *       401:
- *         description: Credenciales inválidas
+ *       200: { description: Login exitoso }
+ *       400: { description: Error de validación }
+ *       401: { description: Credenciales inválidas }
  */
 router.post(
   "/login",

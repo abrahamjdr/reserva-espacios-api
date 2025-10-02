@@ -21,12 +21,8 @@ const router = Router();
 router.use(auth);
 
 /**
- * @route GET /api/spaces
- * @summary Lista todos los espacios
- * @access Privado (JWT)
- *
- * @swagger
- * /api/spaces:
+ * @openapi
+ * /spaces:
  *   get:
  *     summary: Lista todos los espacios
  *     security: [{ bearerAuth: [] }]
@@ -38,12 +34,8 @@ router.use(auth);
 router.get("/", list);
 
 /**
- * @route GET /api/spaces/{id}
- * @summary Obtiene un espacio por id
- * @access Privado (JWT)
- *
- * @swagger
- * /api/spaces/{id}:
+ * @openapi
+ * /spaces/{id}:
  *   get:
  *     summary: Obtiene un espacio por id
  *     security: [{ bearerAuth: [] }]
@@ -52,7 +44,8 @@ router.get("/", list);
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: OK
@@ -62,12 +55,8 @@ router.get("/", list);
 router.get("/:id", param("id").isInt({ gt: 0 }), validate, get);
 
 /**
- * @route POST /api/spaces
- * @summary Crea un espacio
- * @access Privado (JWT)
- *
- * @swagger
- * /api/spaces:
+ * @openapi
+ * /spaces:
  *   post:
  *     summary: Crea un espacio
  *     security: [{ bearerAuth: [] }]
@@ -80,8 +69,10 @@ router.get("/:id", param("id").isInt({ gt: 0 }), validate, get);
  *             type: object
  *             required: [name, pricePerHour]
  *             properties:
- *               name:         { type: string }
- *               pricePerHour: { type: number }
+ *               name:
+ *                 type: string
+ *               pricePerHour:
+ *                 type: number
  *     responses:
  *       201:
  *         description: Creado
@@ -97,12 +88,8 @@ router.post(
 );
 
 /**
- * @route PUT /api/spaces/{id}
- * @summary Actualiza un espacio
- * @access Privado (JWT)
- *
- * @swagger
- * /api/spaces/{id}:
+ * @openapi
+ * /spaces/{id}:
  *   put:
  *     summary: Actualiza un espacio
  *     security: [{ bearerAuth: [] }]
@@ -111,7 +98,8 @@ router.post(
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -119,8 +107,10 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
- *               name:         { type: string }
- *               pricePerHour: { type: number }
+ *               name:
+ *                 type: string
+ *               pricePerHour:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Actualizado
@@ -139,12 +129,8 @@ router.put(
 );
 
 /**
- * @route DELETE /api/spaces/{id}
- * @summary Elimina un espacio
- * @access Privado (JWT)
- *
- * @swagger
- * /api/spaces/{id}:
+ * @openapi
+ * /spaces/{id}:
  *   delete:
  *     summary: Elimina un espacio
  *     security: [{ bearerAuth: [] }]
@@ -153,7 +139,8 @@ router.put(
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Eliminado

@@ -11,10 +11,10 @@
 
     "registered": "Usuario registrado correctamente",
     "login_ok": "Inicio de sesión exitoso",
-
     "email_in_use": "El correo ya está en uso",
     "invalid_credentials": "Credenciales inválidas",
     "user_not_found": "Usuario no encontrado",
+    "user_created": "Usuario creado correctamente",
     "user_deleted": "Usuario eliminado",
     "user_updated": "Usuario actualizado",
 

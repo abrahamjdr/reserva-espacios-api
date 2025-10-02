@@ -22,12 +22,8 @@ const router = Router();
 router.use(auth);
 
 /**
- * @route GET /api/users
- * @summary Lista todos los usuarios
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users:
+ * @openapi
+ * /users:
  *   get:
  *     summary: Lista todos los usuarios
  *     security: [{ bearerAuth: [] }]
@@ -39,12 +35,8 @@ router.use(auth);
 router.get("/", getUsers);
 
 /**
- * @route GET /api/users/me
- * @summary Perfil del usuario autenticado
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users/me:
+ * @openapi
+ * /users/me:
  *   get:
  *     summary: Perfil del usuario autenticado
  *     security: [{ bearerAuth: [] }]
@@ -58,12 +50,8 @@ router.get("/", getUsers);
 router.get("/me", profile);
 
 /**
- * @route GET /api/users/{id}
- * @summary Obtiene un usuario por id
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users/{id}:
+ * @openapi
+ * /users/{id}:
  *   get:
  *     summary: Obtiene un usuario por id
  *     security: [{ bearerAuth: [] }]
@@ -72,7 +60,8 @@ router.get("/me", profile);
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: OK
@@ -82,12 +71,8 @@ router.get("/me", profile);
 router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
 
 /**
- * @route POST /api/users
- * @summary Crea un usuario (ruta administrativa)
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users:
+ * @openapi
+ * /users:
  *   post:
  *     summary: Crea un usuario
  *     security: [{ bearerAuth: [] }]
@@ -100,9 +85,12 @@ router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
  *             type: object
  *             required: [name, email, password]
  *             properties:
- *               name:     { type: string }
- *               email:    { type: string }
- *               password: { type: string }
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Creado
@@ -121,12 +109,8 @@ router.post(
 );
 
 /**
- * @route PUT /api/users/{id}
- * @summary Actualiza un usuario
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users/{id}:
+ * @openapi
+ * /users/{id}:
  *   put:
  *     summary: Actualiza un usuario
  *     security: [{ bearerAuth: [] }]
@@ -135,7 +119,8 @@ router.post(
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -143,8 +128,10 @@ router.post(
  *           schema:
  *             type: object
  *             properties:
- *               name:  { type: string }
- *               email: { type: string }
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Actualizado
@@ -163,12 +150,8 @@ router.put(
 );
 
 /**
- * @route DELETE /api/users/{id}
- * @summary Elimina un usuario
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users/{id}:
+ * @openapi
+ * /users/{id}:
  *   delete:
  *     summary: Elimina un usuario
  *     security: [{ bearerAuth: [] }]
@@ -177,7 +160,8 @@ router.put(
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Eliminado

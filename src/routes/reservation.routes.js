@@ -22,16 +22,12 @@ const router = Router();
 router.use(auth);
 
 /**
- * @route GET /api/reservations
- * @summary Lista todas las reservas (según reglas de acceso)
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations:
+ * @openapi
+ * /reservations:
  *   get:
  *     summary: Lista todas las reservas
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
  *         description: OK
@@ -39,16 +35,12 @@ router.use(auth);
 router.get("/", list);
 
 /**
- * @route GET /api/reservations/me
- * @summary Lista las reservas del usuario autenticado
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations/me:
+ * @openapi
+ * /reservations/me:
  *   get:
  *     summary: Lista las reservas del usuario autenticado
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
  *         description: OK
@@ -56,21 +48,18 @@ router.get("/", list);
 router.get("/me", listMe);
 
 /**
- * @route GET /api/reservations/{id}
- * @summary Obtiene una reserva por id (si pertenece al usuario o según reglas)
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations/{id}:
+ * @openapi
+ * /reservations/{id}:
  *   get:
  *     summary: Obtiene una reserva por id
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: OK
@@ -80,16 +69,12 @@ router.get("/me", listMe);
 router.get("/:id", param("id").isInt({ gt: 0 }), validate, get);
 
 /**
- * @route POST /api/reservations
- * @summary Crea una reserva
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations:
+ * @openapi
+ * /reservations:
  *   post:
  *     summary: Crea una reserva
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
  *       content:
@@ -98,11 +83,20 @@ router.get("/:id", param("id").isInt({ gt: 0 }), validate, get);
  *             type: object
  *             required: [spaceId, date, startTime, duration]
  *             properties:
- *               spaceId:   { type: integer }
- *               date:      { type: string }
- *               startTime: { type: string }
- *               duration:  { type: integer }
- *               cuotas:    { type: integer }
+ *               spaceId:
+ *                 type: integer
+ *               date:
+ *                 type: string
+ *                 description: Fecha en formato ISO (YYYY-MM-DD)
+ *               startTime:
+ *                 type: string
+ *                 description: Hora de inicio en formato HH:mm
+ *               duration:
+ *                 type: integer
+ *                 description: Duración en horas
+ *               cuotas:
+ *                 type: integer
+ *                 description: Número de cuotas (opcional)
  *     responses:
  *       201:
  *         description: Creada
@@ -123,21 +117,18 @@ router.post(
 );
 
 /**
- * @route PUT /api/reservations/{id}
- * @summary Actualiza una reserva
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations/{id}:
+ * @openapi
+ * /reservations/{id}:
  *   put:
  *     summary: Actualiza una reserva
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -146,11 +137,20 @@ router.post(
  *             type: object
  *             required: [spaceId, date, startTime, duration]
  *             properties:
- *               spaceId:   { type: integer }
- *               date:      { type: string }
- *               startTime: { type: string }
- *               duration:  { type: integer }
- *               cuotas:    { type: integer }
+ *               spaceId:
+ *                 type: integer
+ *               date:
+ *                 type: string
+ *                 description: Fecha en formato ISO (YYYY-MM-DD)
+ *               startTime:
+ *                 type: string
+ *                 description: Hora de inicio en formato HH:mm
+ *               duration:
+ *                 type: integer
+ *                 description: Duración en horas
+ *               cuotas:
+ *                 type: integer
+ *                 description: Número de cuotas (opcional)
  *     responses:
  *       200:
  *         description: Actualizada
@@ -174,21 +174,18 @@ router.put(
 );
 
 /**
- * @route DELETE /api/reservations/{id}
- * @summary Cancela/elimina una reserva del usuario autenticado
- * @access Privado (JWT)
- *
- * @swagger
- * /api/reservations/{id}:
+ * @openapi
+ * /reservations/{id}:
  *   delete:
  *     summary: Cancela una reserva
- *     security: [{ bearerAuth: [] }]
  *     tags: [Reservations]
+ *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema: { type: integer }
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Eliminada
