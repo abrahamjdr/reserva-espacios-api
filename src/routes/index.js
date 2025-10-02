@@ -3,6 +3,7 @@
  */
 
 import { Router } from "express";
+import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import spaceRoutes from "./space.routes.js";
 import reservationRoutes from "./reservation.routes.js";
@@ -10,6 +11,7 @@ import swagger from "../docs/swagger.js";
 
 const router = Router();
 
+router.use("/auth", authRoutes);
 router.use("/users", userRoutes);
 router.use("/spaces", spaceRoutes);
 router.use("/reservations", reservationRoutes);
