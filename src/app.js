@@ -30,6 +30,13 @@ app.use(express.json());
 /** Inicializa i18n (configurado en config.js) */
 app.use(i18n.init);
 
+/** Middleware para establecer el locale por petición */
+app.use((req, _res, next) => {
+  if (!req.get("Accept-Language"))
+    req.setLocale(process.env.DEFAULT_LOCALE || "es");
+  next();
+});
+
 /** Interceptor de respuestas unificadas */
 app.use(responseFormatter());
 
