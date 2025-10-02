@@ -16,8 +16,10 @@ const __dirname = path.dirname(__filename);
  */
 i18n.configure({
   locales: ["es", "en"],
-  directory: path.join(__dirname, "..", "..", "locales"),
+  directory: path.join(__dirname, "../locales"),
   defaultLocale: "es",
-  autoReload: true,
   objectNotation: true,
+  autoReload: false,
+  updateFiles: false,
+  syncFiles: false,
 });

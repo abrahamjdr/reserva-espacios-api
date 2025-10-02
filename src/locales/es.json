@@ -1,6 +1,38 @@
 {
   "messages": {
+    "internalError": "Error interno del servidor",
+    "unauthorized": "No autorizado",
+    "forbidden": "Prohibido",
+    "notFound": "Recurso no encontrado",
+    "badRequest": "Solicitud inválida",
+
     "invalidToken": "Token inválido o expirado",
-    "internalError": "Error interno del servidor"
+    "jwt_secret_missing": "Falta la clave JWT en el servidor",
+
+    "registered": "Usuario registrado correctamente",
+    "login_ok": "Inicio de sesión exitoso",
+
+    "email_in_use": "El correo ya está en uso",
+    "invalid_credentials": "Credenciales inválidas",
+    "user_not_found": "Usuario no encontrado",
+    "user_deleted": "Usuario eliminado",
+    "user_updated": "Usuario actualizado",
+
+    "space_not_found": "Espacio no encontrado",
+    "space_removed": "Espacio eliminado",
+
+    "reservation_not_found": "Reserva no encontrada",
+    "reservation_removed": "Reserva cancelada",
+
+    "invalid_hours": "Horario inválido (fuera del rango permitido)",
+    "overlapped_reservation": "El espacio ya está reservado en ese horario",
+
+    "exchange_rate_unavailable": "No se pudo obtener el tipo de cambio",
+    "exchange_rate_invalid_response": "Respuesta inválida del servicio de tipo de cambio",
+
+    "invalid_id": "El parámetro 'id' debe ser un entero válido",
+
+    "validation_failed": "La validación de la solicitud falló",
+    "missing_fields": "Faltan campos requeridos o contienen valores inválidos"
   }
 }

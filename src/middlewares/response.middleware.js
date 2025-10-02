@@ -1,16 +1,14 @@
 /**
- * @file Interceptor de respuestas estilo "Exception/Response Filter" (NestJS).
- * Intercepta res.status y res.json para devolver SIEMPRE el formato unificado:
- * - Éxito (2xx/3xx): { data, meta }
- * - Error (4xx/5xx): { error: { status, message, ... } }
- * Mantiene el status que fije el controlador/middleware.
+ * @file Middleware de respuesta unificada:
+ *       - Inyecta requestId por petición.
+ *       - Intercepta res.status/res.json para devolver { data, meta } en éxitos
+ *         y { error } en fallos, traduciendo claves i18n en messages.
  */
 
 import crypto from "node:crypto";
 
 /**
- * Genera/inyecta un requestId por request (si no existe).
- * Úsalo ANTES del responseFormatter.
+ * Genera y adjunta un identificador único por request.
  * @returns {import('express').RequestHandler}
  */
 export function requestId() {
@@ -21,9 +19,8 @@ export function requestId() {
 }
 
 /**
- * Determina si el payload ya está en nuestro formato final.
- * Evita doble formateo.
- * @param {any} payload
+ * Detecta si el payload ya viene formateado para evitar doble envuelto.
+ * @param {unknown} payload
  * @returns {boolean}
  */
 function alreadyFormatted(payload) {
@@ -36,66 +33,100 @@ function alreadyFormatted(payload) {
 }
 
 /**
- * Interceptor principal. Envuelve res.json conservando el status.
+ * Traduce una clave i18n. Si no existe, devuelve la clave original.
+ * Intenta primero la clave directa y luego "messages.<key>".
+ * @param {import('express').Request} req
+ * @param {string} key
+ * @returns {string|undefined}
+ */
+function translate(req, key) {
+  if (!key) return undefined;
+  if (typeof req.__ !== "function") return key;
+
+  const direct = req.__(key);
+  if (direct !== key) return direct;
+
+  if (!key.includes(".")) {
+    const withNs = `messages.${key}`;
+    const nested = req.__(withNs);
+    if (nested !== withNs) return nested;
+  }
+  return key;
+}
+
+/**
+ * Interceptor principal que normaliza todas las respuestas:
+ * - 2xx/3xx -> { data, meta } y traduce `data.message` si es clave i18n.
+ * - 4xx/5xx -> { error: { status, message, ... } } si no se formateó antes.
+ * Mantiene el status original y agrega metadatos útiles.
  * @returns {import('express').RequestHandler}
  */
 export function responseFormatter() {
   return (req, res, next) => {
     const startedAt = Date.now();
 
+    // Copias de los métodos originales
     const _status = res.status.bind(res);
     const _json = res.json.bind(res);
 
+    // Intercepta res.status para conservar el código
     res.status = (code) => {
       res.statusCode = code;
       return _status(code);
     };
 
+    // Intercepta res.json para envolver la respuesta
     res.json = (payload) => {
       try {
-        // Permitir saltarse el formateo si hace falta:
+        // Permitir que un handler salte el formateo
         if (res.locals?.bypassFormat) return _json(payload);
+        // Evitar doble formateo
         if (alreadyFormatted(payload)) return _json(payload);
 
         const status = res.statusCode || 200;
-        const timestamp = new Date().toISOString();
-        const baseMeta = {
+        const meta = {
           path: req.originalUrl,
           method: req.method,
           requestId: req.id,
-          timestamp,
+          timestamp: new Date().toISOString(),
           responseTimeMs: Date.now() - startedAt,
         };
 
-        // ÉXITO
-        if (status >= 200 && status < 400) {
-          return _json({ data: payload, meta: baseMeta });
+        // ÉXITO: normaliza en { data, meta } y traduce message si procede
+        if (status < 400) {
+          let data = payload;
+          if (payload && typeof payload === "object") {
+            const { message, ...rest } = payload;
+            const out = { ...rest };
+            if (typeof message === "string") {
+              const translated = translate(req, message);
+              out.message =
+                translated && translated !== message ? translated : message;
+            }
+            data = out;
+          }
+          return _json({ data, meta });
         }
 
-        // ERROR
+        // ERROR: si llega sin formatear, lo envolvemos
         const message =
-          (payload && (payload.message || payload.error)) || "internal_error";
+          (payload && (payload.message || payload.error)) ||
+          translate(req, "messages.internalError");
 
-        const body = {
+        return _json({
           error: {
             status,
             message,
             code: payload?.code,
             details: payload?.details,
-            path: baseMeta.path,
-            method: baseMeta.method,
-            requestId: baseMeta.requestId,
-            timestamp: baseMeta.timestamp,
+            path: meta.path,
+            method: meta.method,
+            requestId: meta.requestId,
+            timestamp: meta.timestamp,
           },
-        };
-
-        if (process.env.NODE_ENV !== "production" && payload?.stack) {
-          body.error.stack = payload.stack;
-        }
-
-        return _json(body);
+        });
       } catch {
-        // Si algo raro pasa, devolvemos tal cual para no romper la respuesta
+        // Fallback absoluto: no romper la respuesta
         return _json(payload);
       }
     };

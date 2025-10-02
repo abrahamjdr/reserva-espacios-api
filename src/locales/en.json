@@ -1,6 +1,38 @@
 {
   "messages": {
+    "internalError": "Internal server error",
+    "unauthorized": "Unauthorized",
+    "forbidden": "Forbidden",
+    "notFound": "Resource not found",
+    "badRequest": "Bad request",
+
     "invalidToken": "Invalid or expired token",
-    "internalError": "Internal server error"
+    "jwt_secret_missing": "JWT secret is missing on server",
+
+    "registered": "User registered successfully",
+    "login_ok": "Login successful",
+
+    "email_in_use": "Email is already in use",
+    "invalid_credentials": "Invalid credentials",
+    "user_not_found": "User not found",
+    "user_deleted": "User deleted",
+    "user_updated": "User updated",
+
+    "space_not_found": "Space not found",
+    "space_removed": "Space removed",
+
+    "reservation_not_found": "Reservation not found",
+    "reservation_removed": "Reservation canceled",
+
+    "invalid_hours": "Invalid hours (outside allowed range)",
+    "overlapped_reservation": "The space is already reserved in that time slot",
+
+    "exchange_rate_unavailable": "Could not fetch exchange rate",
+    "exchange_rate_invalid_response": "Invalid response from exchange-rate service",
+
+    "invalid_id": "Parameter 'id' must be a valid integer",
+
+    "validation_failed": "Request validation failed",
+    "missing_fields": "Required fields are missing or contain invalid values"
   }
 }
