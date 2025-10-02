@@ -63,7 +63,7 @@ export function normalizeError(err) {
     });
   }
 
-  // express-validator ya lo tratamos en validate.middleware, pero por si llega aquí
+  // express-validator
   if (err?.type === "validation_error") {
     return new AppError(400, "validation_error", {
       code: "VALIDATION",

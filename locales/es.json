@@ -1,5 +1,6 @@
 {
 	"messages": {
-		"invalidToken": "messages.invalidToken"
+		"invalidToken": "messages.invalidToken",
+		"internalError": "messages.internalError"
 	}
 }

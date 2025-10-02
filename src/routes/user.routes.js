@@ -39,6 +39,25 @@ router.use(auth);
 router.get("/", getUsers);
 
 /**
+ * @route GET /api/users/me
+ * @summary Perfil del usuario autenticado
+ * @access Privado (JWT)
+ *
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Perfil del usuario autenticado
+ *     security: [{ bearerAuth: [] }]
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: OK
+ *       404:
+ *         description: No encontrado
+ */
+router.get("/me", profile);
+
+/**
  * @route GET /api/users/{id}
  * @summary Obtiene un usuario por id
  * @access Privado (JWT)
@@ -61,25 +80,6 @@ router.get("/", getUsers);
  *         description: No encontrado
  */
 router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
-
-/**
- * @route GET /api/users/profile
- * @summary Perfil del usuario autenticado
- * @access Privado (JWT)
- *
- * @swagger
- * /api/users/profile:
- *   get:
- *     summary: Perfil del usuario autenticado
- *     security: [{ bearerAuth: [] }]
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: OK
- *       404:
- *         description: No encontrado
- */
-router.get("/profile", profile);
 
 /**
  * @route POST /api/users
