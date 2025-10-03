@@ -9,5 +9,6 @@ services:
       PORT: 3000
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      FX_FAKE: ${FX_FAKE}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
