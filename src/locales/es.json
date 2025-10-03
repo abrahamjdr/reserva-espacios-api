@@ -17,7 +17,8 @@
     "user_created": "Usuario creado correctamente",
     "user_deleted": "Usuario eliminado",
     "user_updated": "Usuario actualizado",
-
+    "quote_paid": "Cuota marcada como pagada",
+    "quotes_exported": "Cuotas exportadas",
     "space_not_found": "Espacio no encontrado",
     "space_removed": "Espacio eliminado",
 

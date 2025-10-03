@@ -18,7 +18,8 @@
     "user_created": "User created successfully",
     "user_deleted": "User deleted",
     "user_updated": "User updated",
-
+    "quote_paid": "Quote marked as paid",
+    "quotes_exported": "Quotes exported",
     "space_not_found": "Space not found",
     "space_removed": "Space removed",
 

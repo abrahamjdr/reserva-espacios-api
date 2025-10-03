@@ -8,6 +8,7 @@ import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import spaceRoutes from "./space.routes.js";
 import reservationRoutes from "./reservation.routes.js";
+import quoteRoutes from "./quote.routes.js";
 import swagger from "../docs/swagger.js";
 
 const router = Router();
@@ -35,6 +36,12 @@ router.use("/spaces", spaceRoutes);
  * @summary Reservas (CRUD + flujos)
  */
 router.use("/reservations", reservationRoutes);
+
+/**
+ * @route /api/quotes
+ * @summary Cuotas (pago y listado por reserva)
+ */
+router.use("/quotes", quoteRoutes);
 
 /**
  * @summary Documentación interactiva con Swagger UI

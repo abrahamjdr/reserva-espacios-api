@@ -10,6 +10,7 @@ import { Sequelize, DataTypes } from "sequelize";
 import defineUser from "./user.model.js";
 import defineSpace from "./space.model.js";
 import defineReservation from "./reservation.model.js";
+import defineQuote from "./quote.model.js";
 
 const DB_URL = process.env.DB_URL;
 
@@ -28,13 +29,19 @@ export const sequelize = new Sequelize(DB_URL, {
 export const User = defineUser(sequelize, DataTypes);
 export const Space = defineSpace(sequelize, DataTypes);
 export const Reservation = defineReservation(sequelize, DataTypes);
-
+export const Quote = defineQuote(sequelize);
 /** Asociaciones 1:N (User-Reservation, Space-Reservation) */
 User.hasMany(Reservation, { foreignKey: "user_id", as: "reservations" });
 Reservation.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 Space.hasMany(Reservation, { foreignKey: "space_id", as: "reservations" });
 Reservation.belongsTo(Space, { foreignKey: "space_id", as: "space" });
+
+Reservation.hasMany(Quote, { as: "quotes", foreignKey: "reservation_id" });
+Quote.belongsTo(Reservation, {
+  as: "reservation",
+  foreignKey: "reservation_id",
+});
 
 /**
  * Sincroniza modelos con la base de datos.

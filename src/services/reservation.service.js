@@ -9,7 +9,7 @@
  */
 
 import { Op } from "sequelize";
-import { sequelize, Reservation, Space } from "../models/index.js";
+import { sequelize, Reservation, Space, Quote } from "../models/index.js";
 import { calculateTotalVES } from "../utils/calculatePrice.js";
 import { buildQuotas } from "../utils/calculateQuotas.js";
 import { isWithinAllowedHours } from "../utils/dateUtils.js";
@@ -99,7 +99,10 @@ export function listMyReservations(userId) {
       ["date", "DESC"],
       ["start_time", "DESC"],
     ],
-    include: [{ model: Space, as: "space" }],
+    include: [
+      { model: Space, as: "space" },
+      { model: Quote, as: "quotes" },
+    ],
   });
 }
 
@@ -113,7 +116,10 @@ export function listReservations() {
       ["date", "DESC"],
       ["start_time", "DESC"],
     ],
-    include: [{ model: Space, as: "space" }],
+    include: [
+      { model: Space, as: "space" },
+      { model: Quote, as: "quotes" },
+    ],
   });
 }
 
@@ -126,7 +132,10 @@ export function listReservations() {
 export function getReservationByIdForUser(id, userId) {
   return Reservation.findOne({
     where: { id, user_id: userId },
-    include: [{ model: Space, as: "space" }],
+    include: [
+      { model: Space, as: "space" },
+      { model: Quote, as: "quotes" },
+    ],
   });
 }
 
@@ -226,7 +235,20 @@ export async function createReservation(payload) {
       },
     };
     if (cuotas && cuotas > 1) {
-      result.cuotas = buildQuotas(totalVES, cuotas, date);
+      const cuotasArr = buildQuotas(totalVES, cuotas, date);
+      for (const c of cuotasArr) {
+        await Quote.create(
+          {
+            reservation_id: reservation.id,
+            due_date: c.fecha,
+            amount: c.montoVES,
+            paid: false,
+            paid_at: null,
+          },
+          { transaction: t }
+        );
+      }
+      result.cuotas = cuotasArr;
     }
 
     return result;
@@ -336,7 +358,24 @@ export async function updateReservation(id, payload) {
       },
     };
     if (cuotas && cuotas > 1) {
-      result.cuotas = buildQuotas(totalVES, cuotas, date);
+      await Quote.destroy({
+        where: { reservation_id: reservation.id },
+        transaction: t,
+      });
+      const cuotasArr = buildQuotas(totalVES, cuotas, date);
+      for (const c of cuotasArr) {
+        await Quote.create(
+          {
+            reservation_id: reservation.id,
+            due_date: c.fecha,
+            amount: c.montoVES,
+            paid: false,
+            paid_at: null,
+          },
+          { transaction: t }
+        );
+      }
+      result.cuotas = cuotasArr;
     }
 
     return result;

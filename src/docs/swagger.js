@@ -37,6 +37,7 @@ export default function swagger(router) {
         { name: "Users" },
         { name: "Spaces" },
         { name: "Reservations" },
+        { name: "Quotes" },
       ],
       components: {
         securitySchemes: {
@@ -48,20 +49,6 @@ export default function swagger(router) {
     apis: [ROUTES_GLOB, CTRLS_GLOB, YAML_GLOB],
     failOnErrors: true, // lanza si hay YAML inválido (útil para depurar)
   });
-
-  if (process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line no-console
-    console.log("[swagger] globs usados:", {
-      ROUTES_GLOB,
-      CTRLS_GLOB,
-      YAML_GLOB,
-    });
-    // eslint-disable-next-line no-console
-    console.log(
-      "[swagger] paths encontrados:",
-      Object.keys(swaggerSpec.paths || {}).length
-    );
-  }
 
   router.use(
     "/docs",
