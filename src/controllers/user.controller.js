@@ -26,11 +26,34 @@ import { toCamelCase } from "../utils/caseConverter.js";
  */
 export async function getUsers(_req, res, next) {
   try {
-    const users = await list();
-    res.json({
-      users: users.map((u) =>
-        toCamelCase({ id: u.id, name: u.name, email: u.email, role: u.role })
-      ),
+    const pg = res.locals.pagination;
+    const { rows, count } = await list(pg);
+
+    const users = rows.map((u) =>
+      toCamelCase({ id: u.id, name: u.name, email: u.email, role: u.role })
+    );
+
+    const totalPages = Math.ceil(count / pg.limit);
+    const links = {
+      first: pg.makeLink(1),
+      last: pg.makeLink(totalPages),
+      prev: pg.page > 1 ? pg.makeLink(pg.page - 1) : null,
+      next: pg.page < totalPages ? pg.makeLink(pg.page + 1) : null,
+    };
+    return res.json({
+      users,
+      links,
+      pagination: {
+        total: count,
+        page: pg.page,
+        limit: pg.limit,
+        totalPages,
+        hasNext: pg.page < totalPages,
+        hasPrev: pg.page > 1,
+        sortBy: pg.sortBy,
+        sortDir: pg.sortDir,
+        search: pg.search || undefined,
+      },
     });
   } catch (err) {
     next(err);

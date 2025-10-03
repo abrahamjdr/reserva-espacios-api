@@ -5,11 +5,29 @@
 import { User } from "../models/index.js";
 
 /**
- * Lista todos los usuarios.
- * @returns {Promise<User[]>} Arreglo de usuarios
+ * Lista paginada de usuarios con búsqueda simple (name/email) y ordenamiento.
+ * @param {{page:number,limit:number,offset:number,sortBy:string,sortDir:'ASC'|'DESC',search:string}} pg
+ * @returns {Promise<{rows:any[],count:number}>}
  */
-export function list() {
-  return User.findAll();
+export function list(pg) {
+  const ALLOWED_SORT = new Set(["id", "name", "email", "created_at"]);
+  const orderBy = ALLOWED_SORT.has(pg.sortBy) ? pg.sortBy : "created_at";
+
+  const where = pg.search
+    ? {
+        [Op.or]: [
+          { name: { [Op.iLike]: `%${pg.search}%` } },
+          { email: { [Op.iLike]: `%${pg.search}%` } },
+        ],
+      }
+    : undefined;
+
+  return User.findAndCountAll({
+    where,
+    order: [[orderBy, pg.sortDir]],
+    limit: pg.limit,
+    offset: pg.offset,
+  });
 }
 
 /**

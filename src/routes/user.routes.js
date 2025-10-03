@@ -10,7 +10,7 @@ import {
   requireRole,
   requireSelfOrRole,
 } from "../middlewares/rbac.middleware.js";
-import { findById } from "../services/user.service.js";
+import { paginate } from "../middlewares/pagination.middleware.js";
 import { body, param } from "express-validator";
 import {
   getUsers,
@@ -31,13 +31,44 @@ router.use(auth);
  * /users:
  *   get:
  *     summary: Lista todos los usuarios
+ *     parameters:
+ *       - in: path
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: path
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: path
+ *         name: sortBy
+ *         required: false
+ *         schema:
+ *           type: string
+ *           default: created_at
+ *      - in: path
+ *          name: sortDir
+ *          required: false
+ *          schema:
+ *            type: string
+ *            enum: [ASC, DESC]
+ *            default: ASC
  *     security: [{ bearerAuth: [] }]
  *     tags: [Users]
  *     responses:
  *       200:
  *         description: OK
  */
-router.get("/", requireRole("admin"), getUsers);
+router.get(
+  "/",
+  requireRole("admin"),
+  paginate({ defaultLimit: 10, maxLimit: 100 }),
+  getUsers
+);
 
 /**
  * @openapi
