@@ -38,7 +38,7 @@ Es un servicio que permite a usuarios con cuentas **Instagram Business** conecta
 
 - `i18n` (ES/EN) con mensajes traducibles.
 
--`Swagger UI` con seguridad Bearer.
+- `Swagger UI` con seguridad Bearer.
 
 - Respuestas unificadas:
 
