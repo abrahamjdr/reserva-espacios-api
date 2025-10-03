@@ -10,7 +10,7 @@ import {
   requireRole,
   requireSelfOrRole,
 } from "../middlewares/rbac.middleware.js";
-import { findById } from "../services/user.service.js";
+import { paginate } from "../middlewares/pagination.middleware.js";
 import { body, param } from "express-validator";
 import {
   getUsers,
@@ -37,7 +37,12 @@ router.use(auth);
  *       200:
  *         description: OK
  */
-router.get("/", requireRole("admin"), getUsers);
+router.get(
+  "/",
+  requireRole("admin"),
+  paginate({ defaultLimit: 10, maxLimit: 100 }),
+  getUsers
+);
 
 /**
  * @openapi
