@@ -16,12 +16,6 @@
 
 ---
 
-## 🔍 ¿Qué es Social Backup?
-
-Es un servicio que permite a usuarios con cuentas **Instagram Business** conectadas a **páginas de Facebook** autenticarse vía OAuth y extraer sus datos en formato estructurado para respaldo o análisis.
-
----
-
 ## 🧠 Características principales
 
 - CRUD de `Users`, `Spaces` y `Reservations`.
