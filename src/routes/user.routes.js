@@ -6,6 +6,11 @@
 import { Router } from "express";
 import auth from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
+import {
+  requireRole,
+  requireSelfOrRole,
+} from "../middlewares/rbac.middleware.js";
+import { findById } from "../services/user.service.js";
 import { body, param } from "express-validator";
 import {
   getUsers,
@@ -32,7 +37,7 @@ router.use(auth);
  *       200:
  *         description: OK
  */
-router.get("/", getUsers);
+router.get("/", requireRole("admin"), getUsers);
 
 /**
  * @openapi
@@ -68,7 +73,13 @@ router.get("/me", profile);
  *       404:
  *         description: No encontrado
  */
-router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
+router.get(
+  "/:id",
+  requireRole("admin"),
+  param("id").isInt({ gt: 0 }),
+  validate,
+  getById
+);
 
 /**
  * @openapi
@@ -101,6 +112,7 @@ router.get("/:id", param("id").isInt({ gt: 0 }), validate, getById);
  */
 router.post(
   "/",
+  requireRole("admin"),
   body("name").isString().notEmpty(),
   body("email").isEmail(),
   body("password").isString().isLength({ min: 6 }),
@@ -142,6 +154,7 @@ router.post(
  */
 router.put(
   "/:id",
+  requireSelfOrRole((req) => Number(req.params.id), "admin"),
   param("id").isInt({ gt: 0 }),
   body("name").optional().isString().notEmpty(),
   body("email").optional().isEmail(),
@@ -168,6 +181,12 @@ router.put(
  *       404:
  *         description: No encontrado
  */
-router.delete("/:id", param("id").isInt({ gt: 0 }), validate, remove);
+router.delete(
+  "/:id",
+  requireSelfOrRole((req) => Number(req.params.id), "admin"),
+  param("id").isInt({ gt: 0 }),
+  validate,
+  remove
+);
 
 export default router;
