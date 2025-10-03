@@ -30,39 +30,41 @@ router.use(auth);
  * @openapi
  * /users:
  *   get:
- *     summary: Lista todos los usuarios
+ *     summary: Lista todos los usuarios (paginado)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: page
- *         required: false
  *         schema:
  *           type: integer
  *           default: 1
- *       - in: path
+ *       - in: query
  *         name: limit
- *         required: false
  *         schema:
  *           type: integer
  *           default: 10
- *       - in: path
+ *       - in: query
  *         name: sortBy
- *         required: false
  *         schema:
  *           type: string
  *           default: created_at
- *      - in: path
- *          name: sortDir
- *          required: false
- *          schema:
- *            type: string
- *            enum: [ASC, DESC]
- *            default: ASC
- *     security: [{ bearerAuth: [] }]
- *     tags: [Users]
+ *       - in: query
+ *         name: sortDir
+ *         schema:
+ *           type: string
+ *           enum: [ASC, DESC]
+ *           default: ASC
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: OK
  */
+
 router.get(
   "/",
   requireRole("admin"),
